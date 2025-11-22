@@ -51,3 +51,9 @@ variable "high_memory_threshold" {
   type        = number
   default     = 80
 }
+
+variable "alb_5xx_threshold" {
+  description = "5XX errors threshold for alerts"
+  type        = number
+  default     = 1
+}

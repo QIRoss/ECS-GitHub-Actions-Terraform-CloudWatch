@@ -426,12 +426,12 @@ data "aws_availability_zones" "available" {
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   alarm_name          = "${var.app_name}-ecs-cpu-high"
   comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = "2"
+  evaluation_periods  = "1"
   metric_name         = "CPUUtilization"
   namespace           = "AWS/ECS"
-  period              = "120"
+  period              = "60"
   statistic           = "Average"
-  threshold           = "80"
+  threshold           = var.high_cpu_threshold
   alarm_description   = "CPU utilization high for ECS service"
   alarm_actions       = [aws_sns_topic.alerts.arn]
 
@@ -454,7 +454,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   namespace           = "AWS/ECS"
   period              = "120"
   statistic           = "Average"
-  threshold           = "80"
+  threshold           = var.high_memory_threshold
   alarm_description   = "Memory utilization high for ECS service"
   alarm_actions       = [aws_sns_topic.alerts.arn]
 
@@ -498,9 +498,9 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   evaluation_periods  = "1"
   metric_name         = "HTTPCode_Target_5XX_Count"
   namespace           = "AWS/ApplicationELB"
-  period              = "300"
+  period              = "60"
   statistic           = "Sum"
-  threshold           = "10"
+  threshold           = var.alb_5xx_threshold
   alarm_description   = "High number of 5XX errors from ALB"
   alarm_actions       = [aws_sns_topic.alerts.arn]
 
@@ -622,7 +622,7 @@ resource "aws_cloudwatch_metric_alarm" "application_errors" {
   namespace           = "Custom/ECS"
   period              = "300"
   statistic           = "Sum"
-  threshold           = "5"
+  threshold           = "1"
   alarm_description   = "High number of application errors in logs"
   alarm_actions       = [aws_sns_topic.alerts.arn]
 

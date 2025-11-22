@@ -7,3 +7,4 @@ container_port = 8080
 alert_email    = "lucasqreis@gmail.com"
 high_cpu_threshold    = 80
 high_memory_threshold = 80
+alb_5xx_threshold = 1
