@@ -10,7 +10,7 @@ terraform {
 
 provider "aws" {
   region  = var.aws_region
-  profile = var.aws_profile
+  # profile = var.aws_profile
 }
 
 # 1. VPC with proper networking
@@ -385,6 +385,13 @@ resource "aws_ecs_service" "main" {
   task_definition = aws_ecs_task_definition.main.arn
   desired_count   = 1
   launch_type     = "FARGATE"
+
+  lifecycle {
+    ignore_changes = [
+      task_definition,
+      desired_count
+    ]
+  }
 
   network_configuration {
     security_groups  = [aws_security_group.ecs_tasks.id]
