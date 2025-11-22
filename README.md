@@ -34,3 +34,26 @@ echo "=== Deploy Completo! ==="
 ALB_URL=$(terraform output -raw alb_dns_name)
 echo "URL da aplicação: http://$ALB_URL"
 ```
+
+# Criar S3 bucket
+aws s3 mb s3://eloquent-ai-app-tfstate --region us-east-1 --profile qiross
+
+# Habilitar versioning no bucket
+aws s3api put-bucket-versioning \
+    --bucket eloquent-ai-app-tfstate \
+    --versioning-configuration Status=Enabled \
+    --profile qiross
+
+# Criar DynamoDB table para lock
+aws dynamodb create-table \
+    --table-name eloquent-ai-app-tfstate-lock \
+    --attribute-definitions AttributeName=LockID,AttributeType=S \
+    --key-schema AttributeName=LockID,KeyType=HASH \
+    --billing-mode PAY_PER_REQUEST \
+    --region us-east-1 \
+    --profile qiross
+
+terraform state list
+
+# Verifique no S3
+aws s3 ls s3://eloquent-ai-app-tfstate/ --profile qiross
