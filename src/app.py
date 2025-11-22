@@ -22,6 +22,15 @@ def hello():
     )
 
 
+@app.get("/api/test_deploy")
+def test_deploy():
+    return JSONResponse(
+        content={
+            "message": "Deploy test successful!",
+        }
+    )
+
+
 if __name__ == "__main__":
     import uvicorn
 
