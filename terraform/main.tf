@@ -421,3 +421,212 @@ resource "aws_cloudwatch_log_group" "ecs" {
 data "aws_availability_zones" "available" {
   state = "available"
 }
+
+# 2. CloudWatch Alarm para CPU alta do ECS
+resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
+  alarm_name          = "${var.app_name}-ecs-cpu-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = "120"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "CPU utilization high for ECS service"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.main.name
+    ServiceName = aws_ecs_service.main.name
+  }
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
+# 3. CloudWatch Alarm para Memory alta do ECS
+resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
+  alarm_name          = "${var.app_name}-ecs-memory-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "MemoryUtilization"
+  namespace           = "AWS/ECS"
+  period              = "120"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "Memory utilization high for ECS service"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.main.name
+    ServiceName = aws_ecs_service.main.name
+  }
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
+# 4. CloudWatch Alarm para Health Check do ALB
+resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_hosts" {
+  alarm_name          = "${var.app_name}-alb-unhealthy-hosts"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "UnHealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = "60"
+  statistic           = "Sum"
+  threshold           = "0"
+  alarm_description   = "Unhealthy hosts detected in ALB target group"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+    TargetGroup  = aws_lb_target_group.main.arn_suffix
+  }
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
+# 5. CloudWatch Alarm para 5xx Errors do ALB
+resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
+  alarm_name          = "${var.app_name}-alb-5xx-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "HTTPCode_Target_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "10"
+  alarm_description   = "High number of 5XX errors from ALB"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+  }
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
+# 6. SNS Topic para alertas
+resource "aws_sns_topic" "alerts" {
+  name = "${var.app_name}-alerts"
+
+  tags = {
+    Name        = "${var.app_name}-alerts"
+    Environment = var.environment
+  }
+}
+
+# 7. Subscription do SNS (email - você precisa confirmar depois)
+resource "aws_sns_topic_subscription" "email_alerts" {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email  # Você vai adicionar esta variável
+}
+
+# 8. CloudWatch Dashboard para monitoramento visual
+resource "aws_cloudwatch_dashboard" "main" {
+  dashboard_name = "${var.app_name}-dashboard"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ECS", "CPUUtilization", "ServiceName", aws_ecs_service.main.name, "ClusterName", aws_ecs_cluster.main.name],
+            [".", "MemoryUtilization", ".", ".", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "ECS CPU and Memory Utilization"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.main.arn_suffix],
+            [".", "HTTPCode_Target_2XX_Count", ".", "."],
+            [".", "HTTPCode_Target_4XX_Count", ".", "."],
+            [".", "HTTPCode_Target_5XX_Count", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "ALB Requests and Response Codes"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 12
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", aws_lb.main.arn_suffix],
+            [".", "HealthyHostCount", "TargetGroup", aws_lb_target_group.main.arn_suffix],
+            [".", "UnHealthyHostCount", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "ALB Response Time and Host Health"
+          period  = 300
+        }
+      }
+    ]
+  })
+}
+
+# 9. Log Metric Filter para erros na aplicação
+resource "aws_cloudwatch_log_metric_filter" "application_errors" {
+  name           = "${var.app_name}-application-errors"
+  pattern        = "ERROR"
+  log_group_name = aws_cloudwatch_log_group.ecs.name
+
+  metric_transformation {
+    name      = "ApplicationErrorCount"
+    namespace = "Custom/ECS"
+    value     = "1"
+  }
+}
+
+# 10. Alarm para erros na aplicação
+resource "aws_cloudwatch_metric_alarm" "application_errors" {
+  alarm_name          = "${var.app_name}-application-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "ApplicationErrorCount"
+  namespace           = "Custom/ECS"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "5"
+  alarm_description   = "High number of application errors in logs"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  tags = {
+    Environment = var.environment
+  }
+}

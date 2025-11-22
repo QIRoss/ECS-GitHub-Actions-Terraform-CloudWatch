@@ -33,3 +33,21 @@ variable "container_port" {
   type        = number
   default     = 8080
 }
+
+variable "alert_email" {
+  description = "Email address to receive CloudWatch alerts"
+  type        = string
+  default     = "your-email@example.com"
+}
+
+variable "high_cpu_threshold" {
+  description = "CPU utilization threshold for alerts"
+  type        = number
+  default     = 80
+}
+
+variable "high_memory_threshold" {
+  description = "Memory utilization threshold for alerts"
+  type        = number
+  default     = 80
+}

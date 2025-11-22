@@ -1,5 +1,9 @@
 aws_region     = "us-east-1"
+aws_profile    = "default"
 app_name       = "eloquent-ai-app"
 environment    = "dev"
 app_version    = "1.0.0"
 container_port = 8080
+alert_email    = "lucasqreis@gmail.com"
+high_cpu_threshold    = 80
+high_memory_threshold = 80
