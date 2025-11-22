@@ -17,6 +17,13 @@ env:
   ECS_CLUSTER: eloquent-ai-app-cluster
   ECS_TASK_DEFINITION: eloquent-ai-app
   CONTAINER_NAME: eloquent-ai-app
+  CONTAINER_PORT: 8080
+  APP_VERSION: 1.0.2
+  ENVIRONMENT: staging
+  ALERT_EMAIL: lucasqreis@gmail.com
+  HIGH_CPU_THRESHOLD: 80
+  HIGH_MEMORY_THRESHOLD: 80
+  ALB_5xx_THRESHOLD: 1
 
 jobs:
   test:
@@ -83,7 +90,18 @@ jobs:
         working-directory: ./terraform
 
       - name: Terraform Plan
-        run: terraform plan -var="app_version=${{ github.sha }}" -out=tfplan
+        run: |
+          terraform plan \
+            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="app_name=${{ env.ECR_REPOSITORY }}" \
+            -var="environment=${{ env.ENVIRONMENT }}" \
+            -var="container_port=${{ env.CONTAINER_PORT }}" \
+            -var="app_version=${{ env.APP_VERSION }}" \
+            -var="alert_email=${{ env.ALERT_EMAIL }}" \
+            -var="high_cpu_threshold=${{ env.HIGH_CPU_THRESHOLD }}" \
+            -var="high_memory_threshold=${{ env.HIGH_MEMORY_THRESHOLD }}" \
+            -var="alb_5xx_threshold=${{ env.ALB_5xx_THRESHOLD }}" \
+            -out=tfplan
         working-directory: ./terraform
 
       - name: Upload Terraform Plan
@@ -128,7 +146,7 @@ jobs:
         working-directory: ./terraform
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply tfplan
         working-directory: ./terraform
 
   build-and-push:
