@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ master ]
 
+permissions:
+  contents: read
+  deployments: write
+
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: eloquent-ai-app
@@ -106,18 +110,18 @@ jobs:
           
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Create deployment record
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.repos.createDeployment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: context.sha,
-              environment: 'production',
-              description: 'ECS Deployment',
-              required_contexts: []
-            })
+      # - name: Create deployment record
+      #   uses: actions/github-script@v6
+      #   with:
+      #     script: |
+      #       github.rest.repos.createDeployment({
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         ref: context.sha,
+      #         environment: 'production',
+      #         description: 'ECS Deployment',
+      #         required_contexts: []
+      #       })
 
   deploy:
     needs: build-and-push
