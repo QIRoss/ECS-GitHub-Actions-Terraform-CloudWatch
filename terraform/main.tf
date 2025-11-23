@@ -378,7 +378,7 @@ resource "aws_ecs_task_definition" "main" {
   }
 }
 
-# 2. ECS Service
+# ECS Service
 resource "aws_ecs_service" "main" {
   name            = "${var.app_name}-service"
   cluster         = aws_ecs_cluster.main.id
@@ -429,7 +429,7 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# 2. CloudWatch Alarm para CPU alta do ECS
+# 2. CloudWatch Alarm ECS CPU High
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   alarm_name          = "${var.app_name}-ecs-cpu-high"
   comparison_operator = "GreaterThanThreshold"
@@ -452,7 +452,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   }
 }
 
-# 3. CloudWatch Alarm para Memory alta do ECS
+# 3. CloudWatch Alarm ECS Memory High
 resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   alarm_name          = "${var.app_name}-ecs-memory-high"
   comparison_operator = "GreaterThanThreshold"
@@ -475,7 +475,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   }
 }
 
-# 4. CloudWatch Alarm para Health Check do ALB
+# 4. CloudWatch Alarm Application Load Balancer Unhealthy Hosts
 resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_hosts" {
   alarm_name          = "${var.app_name}-alb-unhealthy-hosts"
   comparison_operator = "GreaterThanThreshold"
@@ -498,7 +498,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_hosts" {
   }
 }
 
-# 5. CloudWatch Alarm para 5xx Errors do ALB
+# 5. CloudWatch Alarm ALB 5XX Errors
 resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   alarm_name          = "${var.app_name}-alb-5xx-errors"
   comparison_operator = "GreaterThanThreshold"
@@ -520,7 +520,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   }
 }
 
-# 6. SNS Topic para alertas
+# 6. SNS Topic for Alerts
 resource "aws_sns_topic" "alerts" {
   name = "${var.app_name}-alerts"
 
@@ -530,14 +530,14 @@ resource "aws_sns_topic" "alerts" {
   }
 }
 
-# 7. Subscription do SNS (email - você precisa confirmar depois)
+# 7. SNS Subscription for Email Alerts
 resource "aws_sns_topic_subscription" "email_alerts" {
   topic_arn = aws_sns_topic.alerts.arn
   protocol  = "email"
   endpoint  = var.alert_email
 }
 
-# 8. CloudWatch Dashboard para monitoramento visual
+# 8. CloudWatch Dashboard dashboard
 resource "aws_cloudwatch_dashboard" "main" {
   dashboard_name = "${var.app_name}-dashboard"
 
@@ -607,7 +607,7 @@ resource "aws_cloudwatch_dashboard" "main" {
   })
 }
 
-# 9. Log Metric Filter para erros na aplicação
+# 9. Log Metric Filter application errors
 resource "aws_cloudwatch_log_metric_filter" "application_errors" {
   name           = "${var.app_name}-application-errors"
   pattern        = "ERROR"
@@ -620,7 +620,7 @@ resource "aws_cloudwatch_log_metric_filter" "application_errors" {
   }
 }
 
-# 10. Alarm para erros na aplicação
+# 10. Alarm application errors
 resource "aws_cloudwatch_metric_alarm" "application_errors" {
   alarm_name          = "${var.app_name}-application-errors"
   comparison_operator = "GreaterThanThreshold"
