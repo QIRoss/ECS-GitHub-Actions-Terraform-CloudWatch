@@ -162,7 +162,22 @@ curl http://$ALB_URL/api/hello
 - 5xx Errors: >5 errors in 10 minutes
 - Health Check Failures: Immediate alerting
 
-### Accessing Metrics
+### Accessing Metrics and Logs
+
+```
+# Access Application Logs
+aws logs get-log-events \
+  --log-group-name "/ecs/eloquent-ai-app" \
+  --log-stream-name "$(aws logs describe-log-streams --log-group-name "/ecs/eloquent-ai-app" --region us-east-1 --order-by LastEventTime --descending --query 'logStreams[0].logStreamName' --output text)" \
+  --region us-east-1 \
+  --limit 10 \
+  --query 'events[*].[timestamp, message]' \
+  --output text | while read ts msg; do 
+    echo "$(date -d "@$(($ts/1000))" "+%H:%M:%S") - $msg"; 
+done
+```
+
+
 ```
 # View CloudWatch Dashboard
 aws cloudwatch get-dashboard --dashboard-name eloquent-ai-app-dashboard
